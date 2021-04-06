@@ -2,6 +2,7 @@ from django.db import models
 import jwt
 
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 from django.conf import settings
 from django.contrib.auth.models import (
@@ -44,6 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["email"]
@@ -72,3 +74,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         )
 
         return token.decode("utf-8")
+
+    def set_last_login(self):
+        self.last_login = timezone.now()
+        self.save()
