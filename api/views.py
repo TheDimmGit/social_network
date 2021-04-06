@@ -90,6 +90,7 @@ class PostDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
+        """Post delete."""
         post = get_object(pk, Post)
         if post.author.id == request.user.id:
             post.delete()
@@ -99,6 +100,7 @@ class PostDetail(APIView):
 
 class PostLike(APIView):
     def get(self, request, pk):
+        """Like or unlike post."""
         post_id = get_object(pk, Post).id
         user_id = request.user.id
         data_dict = {"author": user_id, "post": post_id}
@@ -133,11 +135,13 @@ class PostLike(APIView):
 
 class PostComment(APIView):
     def get(self, request, pk):
+        """Get all post comments."""
         comments = Comment.objects.filter(post_id=pk)
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
     def post(self, request, pk):
+        """Add comment to post."""
         data = dict(request.data)
         post_id = get_object(pk, Post).id
         data = {key: value[0] for key, value in data.items()}
@@ -152,6 +156,7 @@ class PostComment(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
+        """Delete comment from post."""
         comment = get_object(pk, Comment)
         if comment.author.id == request.user.id:
             comment.delete()
@@ -159,6 +164,7 @@ class PostComment(APIView):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
     def put(self, request, pk):
+        """Edit comment."""
         comment = self.get_object(pk, Comment)
         data = dict(request.data)
         data = {key: value[0] for key, value in data.items()}
@@ -178,6 +184,8 @@ class PostComment(APIView):
 
 
 class Analytics(APIView):
+    """Get all likes on given date interval."""
+
     def get(self, request, date_from, date_to):
         date_from = datetime.strptime(date_from, "%Y-%m-%d")
         date_to = datetime.strptime(date_to, "%Y-%m-%d")
@@ -189,6 +197,7 @@ class Analytics(APIView):
 
 class PostBackup(APIView):
     def get_backups_by_post(self, pk):
+        """Get all backups by post PrimaryKey."""
         results = PostBackUp.objects.filter(post=pk)
         if not results:
             raise Http404
