@@ -1,5 +1,10 @@
 from django.http import Http404
-from .serializers import PostSerializer, CommentSerializer, LikeSerializer, PostBackUpSerializer
+from .serializers import (
+    PostSerializer,
+    CommentSerializer,
+    LikeSerializer,
+    PostBackUpSerializer,
+)
 from .models import Post, Comment, Like, PostBackUp
 from rest_framework import status
 from rest_framework.views import APIView
@@ -20,6 +25,7 @@ def get_object(pk: int, table):
 
 class PostList(APIView):
     """Processing home URL."""
+
     def get(self, request):
         """Get all posts info from Post model and return all post contained JSON."""
         posts = Post.objects.all()
@@ -30,11 +36,11 @@ class PostList(APIView):
         """Receive data from request and save to DB."""
         data = dict(request.data)
         data = {key: value[0] for key, value in data.items()}
-        data['author'] = str(request.user.id)
+        data["author"] = str(request.user.id)
         # Protection from custom user likes number input
-        data['likes_count'] = 0
+        data["likes_count"] = 0
 
-        data_query_dict = QueryDict('', mutable=True)
+        data_query_dict = QueryDict("", mutable=True)
         data_query_dict.update(data)
         serializer = PostSerializer(data=data_query_dict)
         if serializer.is_valid():
@@ -51,9 +57,9 @@ class PostDetail(APIView):
         """Get full post info."""
         post = get_object(pk, Post)
         data = PostSerializer(post).data
-        data['likes_count'] = len(Like.objects.filter(post=pk))
+        data["likes_count"] = len(Like.objects.filter(post=pk))
         comments = Comment.objects.filter(post=pk)
-        data['comments'] = [CommentSerializer(comment).data for comment in comments]
+        data["comments"] = [CommentSerializer(comment).data for comment in comments]
         return Response(data)
 
     def put(self, request, pk):
@@ -63,14 +69,14 @@ class PostDetail(APIView):
         # After conversion QueryDict to dict values were packed in lists so values were unpacked
         data = {key: value[0] for key, value in data.items()}
 
-        data['author'] = str(post.author.id)
-        data['likes_count'] = post.likes_count
-        data_query_dict = QueryDict('', mutable=True)
+        data["author"] = str(post.author.id)
+        data["likes_count"] = post.likes_count
+        data_query_dict = QueryDict("", mutable=True)
         data_query_dict.update(data)
         serializer = PostSerializer(post, data=data_query_dict)
         # Make backup of previous post version and save it to backup table (just in case).
-        backup_data = {'post': post.id, 'content': post.content, 'date': post.date}
-        backup_data_query_dict = QueryDict('', mutable=True)
+        backup_data = {"post": post.id, "content": post.content, "date": post.date}
+        backup_data_query_dict = QueryDict("", mutable=True)
         backup_data_query_dict.update(backup_data)
         backup_serializer = PostBackUpSerializer(data=backup_data_query_dict)
         if backup_serializer.is_valid():
@@ -92,14 +98,13 @@ class PostDetail(APIView):
 
 
 class PostLike(APIView):
-
     def get(self, request, pk):
         post_id = get_object(pk, Post).id
         user_id = request.user.id
-        data_dict = {'author': user_id, 'post': post_id}
+        data_dict = {"author": user_id, "post": post_id}
 
         # Convert dict to QueryDict
-        data_query_dict = QueryDict('', mutable=True)
+        data_query_dict = QueryDict("", mutable=True)
         data_query_dict.update(data_dict)
 
         serializer = LikeSerializer(data=data_query_dict)
@@ -112,18 +117,21 @@ class PostLike(APIView):
                 post.likes_count += 1
                 post.save()
                 serializer.save()
-            return Response(f"You liked post {post_id}.", status=status.HTTP_201_CREATED)
+            return Response(
+                f"You liked post {post_id}.", status=status.HTTP_201_CREATED
+            )
         else:
             # Like remove if user already liked post
             like = Like.objects.get(author=user_id, post=post_id)
             post.likes_count -= 1
             post.save()
             like.delete()
-            return Response(f"You unliked post {post_id}.", status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                f"You unliked post {post_id}.", status=status.HTTP_204_NO_CONTENT
+            )
 
 
 class PostComment(APIView):
-
     def get(self, request, pk):
         comments = Comment.objects.filter(post_id=pk)
         serializer = CommentSerializer(comments, many=True)
@@ -133,9 +141,9 @@ class PostComment(APIView):
         data = dict(request.data)
         post_id = get_object(pk, Post).id
         data = {key: value[0] for key, value in data.items()}
-        data['author'] = str(request.user.id)
-        data['post'] = post_id
-        data_query_dict = QueryDict('', mutable=True)
+        data["author"] = str(request.user.id)
+        data["post"] = post_id
+        data_query_dict = QueryDict("", mutable=True)
         data_query_dict.update(data)
         serializer = CommentSerializer(data=data_query_dict)
         if serializer.is_valid():
@@ -154,10 +162,10 @@ class PostComment(APIView):
         comment = self.get_object(pk, Comment)
         data = dict(request.data)
         data = {key: value[0] for key, value in data.items()}
-        data['date'] = comment.date
-        data['author'] = comment.author.id
-        data['post'] = comment.post.id
-        data_query_dict = QueryDict('', mutable=True)
+        data["date"] = comment.date
+        data["author"] = comment.author.id
+        data["post"] = comment.post.id
+        data_query_dict = QueryDict("", mutable=True)
         data_query_dict.update(data)
         serializer = CommentSerializer(comment, data=data_query_dict)
         if serializer.is_valid():
@@ -170,18 +178,16 @@ class PostComment(APIView):
 
 
 class Analytics(APIView):
-
     def get(self, request, date_from, date_to):
-        date_from = datetime.strptime(date_from, '%Y-%m-%d')
-        date_to = datetime.strptime(date_to, '%Y-%m-%d')
+        date_from = datetime.strptime(date_from, "%Y-%m-%d")
+        date_to = datetime.strptime(date_to, "%Y-%m-%d")
         likes = Like.objects.filter(date__range=[date_from, date_to])
         serializer = LikeSerializer(likes, many=True)
         likes_count = len(list(serializer.data))
-        return Response(f'{likes_count} likes in total.')
+        return Response(f"{likes_count} likes in total.")
 
 
 class PostBackup(APIView):
-
     def get_backups_by_post(self, pk):
         results = PostBackUp.objects.filter(post=pk)
         if not results:

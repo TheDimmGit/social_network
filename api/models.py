@@ -13,7 +13,7 @@ class Post(models.Model):
         return self.title
 
     class Meta:
-        ordering = ['-likes_count', '-date']
+        ordering = ["-likes_count", "-date"]
 
 
 class Comment(models.Model):
@@ -26,7 +26,7 @@ class Comment(models.Model):
         return self.content
 
     class Meta:
-        ordering = ['-date']
+        ordering = ["-date"]
 
 
 class Like(models.Model):
